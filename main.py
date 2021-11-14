@@ -4,16 +4,21 @@ import struct
 import glob
 import os
 
-#key=[0xD3,0x6F,0xAC,0x96]   #Eroge
-key=[0x78,0x1B,0x73,0x30]   #Euphoria
+key=[0xD3,0x6F,0xAC,0x96]   #Eroge
+#key=[0x78,0x1B,0x73,0x30]   #Euphoria
 
-#second_xor=2                #Eroge
-second_xor=4                 #Euphoria
+second_xor=2                #Eroge
+#second_xor=4                 #Euphoria
 file_root = []
 ybn_bytes=[]
 filebytes=[]
 buffer=[]
-blacklist=["es.",""]
+#blacklist=["es.",""]
+blacklist=[]
+blackliststart=["st_","bg_","bg/","ior_","kis_","mom_",
+"nen_","opn_","oth_","sd_","st_","sub_","ysr",
+"bgm","EV/","SE","KIS","MOM","REI","NEN","IOR",
+"TOM","REM","pac/","MIK","KIZ","tip/","FRE"]
 
 def comprobation():
     dec=False
@@ -90,8 +95,13 @@ def CreateJSON():
               text+=chr(buffer[y])
           y+=1
 
-        if text.startswith(blacklist[0]):                 #Delete words from the blacklist
-          text=""
+        for function in blacklist:
+          if text==function:
+            text=""
+        for l in range(0,len(blackliststart)):
+          if text.startswith(blackliststart[l]):
+            text=""
+
 
         if error==True:                                   #Just in case
           text="ERROR_IN_THE_LINE"
@@ -112,19 +122,45 @@ def CreateJSON():
 
 
 def ReinsertText():
-  f = open("Text.json",'r')
+  hextext=[]
+  f = open("Text.json",'r', encoding="shift_jisx0213")
   data_set=json.load(f)
   #for x in data_set:
     #print(data_set[x][0][0:4])
-  print(data_set["yst00125.ybn"][0][0])
   
+  for x in bytearray(data_set["yst00234.ybn"][0][2],"shift_jisx0213"):
+    hextext.append(hex(x))
+    
+  print(hextext)
   menu()
+
+def GetBlacklist():
+  blacklist.clear()
+  buffer=[]
+  temp_text=""
+
+  f = open("ysbin/ysl.ybn",'rb')
+  buffer=f.read()
+  f.seek(0)
+  for x in range(0,len(f.read())):
+    if (buffer[x]>0x00 and buffer[x]<0x20) and buffer[x-1]==0x0 and buffer[x-2]==0x0 and buffer[x+1]>=0x40:
+      for y in range (1,buffer[x]+1):
+        temp_text+=chr(buffer[x+y])
+#      for y in range (len(temp_text)):
+
+      blacklist.append(temp_text)
+     
+      temp_text=""
+  print(blacklist)
+  menu()
+
  
 
 
   
 
 def menu():
+
     opcion=0
     print("1_Extract text")
     print("2_Reinsert text")
@@ -137,10 +173,13 @@ def menu():
         comprobation()
     if opcion==96:
         CreateJSON()
+    if opcion==97:
+        print(blacklist)
     if opcion==2:
         ReinsertText()
 
 
 
 
+GetBlacklist()
 menu()
